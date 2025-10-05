@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ESP32 Control Panel</title>
+  <style>
+    body { font-family: Arial, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; background:#f4f4f4;}
+    .container { text-align:center; background:#fff; padding:2rem; border-radius:10px; box-shadow:0 4px 8px rgba(0,0,0,0.1);}
+    h1 { color:#333; }
+    .status-light { width:12px; height:12px; background:#ccc; border-radius:50%; display:inline-block; margin-left:10px; vertical-align:middle; }
+    .status-light.connected { background:#4CAF50; }
+    .controls { margin-top:1.5rem; }
+    .btn { background:#4CAF50; color:#fff; border:none; padding:10px 20px; font-size:16px; margin:4px 2px; cursor:pointer; border-radius:5px; transition:filter .2s; }
+    .btn:hover { filter:brightness(0.95); }
+    .btn.off { background:#f44336; }
+    .input-group { margin-bottom:1rem; }
+    .input-group input { padding:8px; border:1px solid #ccc; border-radius:5px; width:80px; text-align:center; }
+    .hint { font-size:12px; color:#666; margin-top:.5rem;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Appliance Control <span class="status-light" id="connectionStatus"></span></h1>
+    <p id="statusText">Disconnected</p>
+    <div class="controls">
+      <div class="input-group">
+        <label for="pinNumber">Relay Pin:&nbsp;</label>
+        <input type="number" id="pinNumber" value="23" min="0" />
+      </div>
+      <button class="btn" id="onBtn">TURN ON</button>
+      <button class="btn off" id="offBtn">TURN OFF</button>
+      <div class="hint">Active-low relays handled in firmware.</div>
+    </div>
+  </div>
+
+  <script>
+    const pinInput = document.getElementById('pinNumber');
+    const onBtn = document.getElementById('onBtn');
+    const offBtn = document.getElementById('offBtn');
+    const statusLight = document.getElementById('connectionStatus');
+    const statusText = document.getElementById('statusText');
+
+    // Build WS URL from the current page (works for http://localhost:3000 and LAN IPs)
+    const wsProtocol = (location.protocol === 'https:') ? 'wss' : 'ws';
+    const wsUrl = `${wsProtocol}://${location.host}/`;
+
+    let ws;
+
+    function connectWebSocket() {
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('Browser connected to WS');
+        statusLight.classList.add('connected');
+        statusText.textContent = 'Connected';
+
+        const pinNumber = parseInt(pinInput.value, 10);
+        ws.send(JSON.stringify({ type: "cmd", body: { type: "pinMode", pin: pinNumber, mode: "output" }}));
+      };
+
+      ws.onmessage = (event) => {
+        console.log('web app WS message:', event.data);
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'digitalWrite' && Number(msg.pin) === Number(pinInput.value)) {
+            const on = Number(msg.value) === 1;
+            onBtn.style.filter = on ? 'brightness(1)' : 'brightness(0.9)';
+            offBtn.style.filter = on ? 'brightness(0.9)' : 'brightness(1)';
+          }
+        } catch (_) {}
+      };
+
+      ws.onclose = () => {
+        console.log('WS closed');
+        statusLight.classList.remove('connected');
+        statusText.textContent = 'Disconnected';
+        setTimeout(connectWebSocket, 2000);
+      };
+
+      ws.onerror = (err) => console.error('WS error:', err);
+    }
+
+    function sendCommand(pin, value) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "cmd", body: { type: "digitalWrite", pin, value }, from: 'browser' }));
+      } else {
+        alert("WebSocket is not connected. Reload the page.");
+      }
+    }
+
+    onBtn.addEventListener('click', () => sendCommand(parseInt(pinInput.value, 10), 1));
+    offBtn.addEventListener('click', () => sendCommand(parseInt(pinInput.value, 10), 0));
+
+    connectWebSocket();
+  </script>
+</body>
+</html>
