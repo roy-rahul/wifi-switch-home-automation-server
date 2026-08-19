@@ -68,9 +68,16 @@ ESP32BackEnd is a simple real-time control panel application designed to interfa
 - ESP32 device sends messages indicating relay state and errors if any.
 - Server broadcasts messages to all connected clients to synchronize state.
 
+## Further development
+Make it available over the internet.
+Add auto timer functions, which will let user to assign the timer to turn On or Off automatically.
+Work on having a user profile.
+Add controllers for different applicanes/sensors it through different sensers.
+
+
 ## License
 This project is licensed under the ISC License.
 
 ---
 
-Feel free to customize this README further as per your specific firmware or additional features.
+Feel free to customize this README further as per your specific server or additional features.
