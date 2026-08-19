@@ -1,4 +1,4 @@
-# WIFI SWITCH - HOME AUTOMATION - SERVER
+# Wifi Switch - Home Automation - Server
 
 ## Overview
 ESP32BackEnd is a simple real-time control panel application designed to interface with ESP32 microcontrollers via WebSockets. It allows users to control appliance relays connected to the ESP32 through a web-based user interface. The project consists of a Node.js backend server that serves the frontend and handles WebSocket communication, enabling bi-directional messaging between the ESP32 device and browser clients.
